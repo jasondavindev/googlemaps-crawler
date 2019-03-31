@@ -65,7 +65,7 @@ const scraper = (function() {
 		},
 
 		getPlainText() {
-			return schools.reduce(
+			return _schools.reduce(
 				(str, e) =>
 					(str += `${e.header}\t${e.address}\t${e.neighborhood}\t${e.city}\t${e.state}\t${e.phone}\t${e.site}\n`),
 				'',
