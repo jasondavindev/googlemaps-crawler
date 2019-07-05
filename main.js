@@ -88,7 +88,7 @@ const scraper = (function() {
 		},
 
 		async getHeader() {
-			let header = $('h1.section-hero-header-title');
+			let header = $('h1.section-hero-header-title-title');
 			header instanceof NodeList && (header = header[0]);
 
 			while (!header || header.innerText === undefined) {
