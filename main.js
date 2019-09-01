@@ -1,18 +1,17 @@
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 let $ = document.querySelectorAll.bind(document);
 let TIME_SLEEP_ALL = 1000;
+const matchText = 'escola de futebol';
+const testRegex = new RegExp(matchText, 'gi');
 
 const crawler = (function() {
-	const _schools = [];
+	const _results = [];
 
 	return {
 		async start() {
-			_schools.length = 0;
+			_results.length = 0;
 
-			while (
-				$('button[jsaction="pane.paginationSection.nextPage"][disabled="true"]').length ===
-				0
-			) {
+			while ($('button[jsaction="pane.paginationSection.nextPage"][disabled="true"]').length === 0) {
 				await sleep(TIME_SLEEP_ALL);
 
 				const _length = [...document.querySelectorAll('.section-result').values()].length;
@@ -32,15 +31,17 @@ const crawler = (function() {
 					const header = await this.getHeader();
 					const category = await this.getCategory();
 
-					if (!this.isEnglishSchool(category)) {
-						console.log('Dont match', header, category);
+					if (!this.matchSearch(category)) {
+						console.log('No match with RegEx', category);
 						btnBack.click();
 						await sleep(TIME_SLEEP_ALL);
 						continue;
+					} else {
+						console.log('match with RegEx', category);
 					}
 
-					const school = this.buildSchool($('span.widget-pane-link'), header);
-					_schools.push(school);
+					const result = this.formatResult($('span.widget-pane-link'), header);
+					_results.push(result);
 
 					btnBack.click();
 
@@ -65,15 +66,16 @@ const crawler = (function() {
 		},
 
 		get text() {
-			return _schools.reduce(
+			return _results.reduce(
 				(str, e) =>
 					(str += `${e.header}\t${e.address}\t${e.neighborhood}\t${e.city}\t${e.state}\t${e.phone}\t${e.site}\n`),
-				'',
+				''
 			);
 		},
 
-		isEnglishSchool(category) {
-			return /language school|english school/gi.test(category);
+		matchSearch(category) {
+			// return /language school|english school/gi.test(category);
+			return testRegex.test(category);
 		},
 
 		async getCategory() {
@@ -84,7 +86,7 @@ const crawler = (function() {
 				anchor = document.querySelector('button[jsaction="pane.rating.category"]');
 			}
 
-			return anchor.innerText;
+			return anchor.innerText.trim();
 		},
 
 		async getHeader() {
@@ -113,8 +115,8 @@ const crawler = (function() {
 			return btnBack;
 		},
 
-		buildSchool(spans, header) {
-			const school = {
+		formatResult(spans, header) {
+			const result = {
 				header,
 				address: '',
 				neighborhood: '',
@@ -125,7 +127,7 @@ const crawler = (function() {
 				addressError: '',
 			};
 
-			spans.forEach(e => {
+			spans.forEach((e) => {
 				let value = e.innerText;
 
 				/**
@@ -138,38 +140,38 @@ const crawler = (function() {
 
 					if (regex.test(value)) {
 						const sub = /(.*)\s?\-\s?(.*)\,\s?(.*)\s?\-\s?(\w{2})\,.*/gi.exec(value);
-						school.address = sub[1].trim();
-						school.neighborhood = sub[2].trim();
-						school.city = sub[3].trim();
-						school.state = sub[4].trim();
+						result.address = sub[1].trim();
+						result.neighborhood = sub[2].trim();
+						result.city = sub[3].trim();
+						result.state = sub[4].trim();
 					} else {
 						/**
 						 * No match address
 						 */
-						school.addressError = value;
+						result.addressError = value;
 					}
 				} else if (/\(\d{2}\)\s\d+\-\d+/gi.test(value)) {
 					/**
 					 * Phone
 					 */
-					school.phone = value;
+					result.phone = value;
 				} else if (
 					/**
 					 * Website url
 					 */
 					/^((http|https):\/\/)?(www.)?(?!.*(http|https|www.))[a-zA-Z0-9_-]+(\.[a-zA-Z]+)+((\/)[\w#]+)*(\/\w+\?[a-zA-Z0-9_]+=\w+(&[a-zA-Z0-9_]+=\w+)*)?$/gi.test(
-						value,
+						value
 					)
 				) {
-					school.site = value;
+					result.site = value;
 				}
 			});
 
-			return school;
+			return result;
 		},
 
-		getSchools() {
-			return [..._schools];
+		getResults() {
+			return [..._results];
 		},
 	};
 })();
